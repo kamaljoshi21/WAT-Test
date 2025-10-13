@@ -45,15 +45,6 @@
       background-color: #0056b3;
     }
 
-    input {
-      padding: 6px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      text-align: center;
-      width: 60px;
-      margin-left: 5px;
-    }
-
     #counter {
       margin-top: 15px;
       font-size: 1rem;
@@ -65,19 +56,13 @@
 
   <h1>Word Association Test Practice</h1>
 
-  <div>
-    <label>Display Time (sec): </label>
-    <input type="number" id="secondsInput" value="15" min="1" />
-  </div>
+  <div id="word">Loading...</div>
 
-  <div id="word"></div>
-
-  <button id="startBtn" disabled>Start</button>
+  <button id="startBtn" disabled>Start Test</button>
 
   <div id="counter">Loading words...</div>
 
   <script>
-    const secondsInput = document.getElementById("secondsInput");
     const startBtn = document.getElementById("startBtn");
     const wordDiv = document.getElementById("word");
     const counterDiv = document.getElementById("counter");
@@ -85,8 +70,9 @@
     let words = [];
     let current = 0;
     let maxWords = 0;
+    const DISPLAY_TIME = 15; // Fixed 15 seconds
 
-    // ✅ Your actual GitHub raw link:
+    // ✅ Your GitHub words link:
     const WORDS_URL = "https://raw.githubusercontent.com/kamaljoshi21/WAT-Test/refs/heads/main/words.txt";
 
     async function loadWords() {
@@ -112,24 +98,19 @@
         return;
       }
 
-      const secs = parseInt(secondsInput.value, 10);
       wordDiv.textContent = words[current];
       counterDiv.textContent = `Word ${current + 1} of ${maxWords}`;
-      startBtn.disabled = true;
+      current++;
 
-      setTimeout(() => {
-        current++;
-        wordDiv.textContent = "";
-        if (current < maxWords) {
-          startBtn.disabled = false;
-          startBtn.textContent = "Show Next Word";
-        } else {
-          counterDiv.textContent = `✅ Done — ${maxWords} words shown.`;
-        }
-      }, secs * 1000);
+      setTimeout(showNextWord, DISPLAY_TIME * 1000);
     }
 
-    startBtn.addEventListener("click", showNextWord);
+    startBtn.addEventListener("click", () => {
+      startBtn.disabled = true;
+      current = 0;
+      showNextWord();
+    });
+
     window.addEventListener("load", loadWords);
   </script>
 
