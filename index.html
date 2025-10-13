@@ -39,107 +39,62 @@
   </div>
 
   <script>
-    const fileInput = document.getElementById('fileInput');
-    const loadBtn = document.getElementById('loadBtn');
-    const startBtn = document.getElementById('startBtn');
-    const secondsInput = document.getElementById('secondsInput');
-    const wordDiv = document.getElementById('word');
-    const counterDiv = document.getElementById('counter');
+const secondsInput = document.getElementById("secondsInput");
+const startBtn = document.getElementById("startBtn");
+const wordDiv = document.getElementById("word");
+const counterDiv = document.getElementById("counter");
 
-    let words = [];
-    let current = 0;
-    let maxWords = 0;
-    let displayTimer = null;
+let words = [];
+let current = 0;
+let maxWords = 0;
 
-    // enable Load button when file selected
-    fileInput.addEventListener('change', () => {
-      loadBtn.disabled = !fileInput.files.length;
-    });
+// 🔗 Paste your raw GitHub URL here:
+const WORDS_URL = "https://raw.githubusercontent.com/YOUR_USERNAME/YOUR_REPO/main/words.txt";
 
-    // load words from the uploaded file
-    loadBtn.addEventListener('click', () => {
-      const file = fileInput.files[0];
-      if (!file) return alert('Please choose a .txt file.');
+async function loadWords() {
+  try {
+    const res = await fetch(WORDS_URL);
+    if (!res.ok) throw new Error("Failed to load words");
+    const text = await res.text();
+    words = text.split(/\r?\n/).map(w => w.trim()).filter(Boolean);
+    maxWords = Math.min(60, words.length);
+    counterDiv.textContent = `Loaded ${maxWords} words.`;
+    startBtn.disabled = false;
+  } catch (err) {
+    counterDiv.textContent = "Error loading words. Check your URL.";
+    console.error(err);
+  }
+}
 
-      const reader = new FileReader();
-      reader.onload = e => {
-        words = e.target.result
-          .split(/\r?\n/)
-          .map(s => s.trim())
-          .filter(Boolean); // remove empty lines
+function showNextWord() {
+  if (current >= maxWords) {
+    counterDiv.textContent = `Done — ${maxWords} words shown.`;
+    wordDiv.textContent = "";
+    startBtn.disabled = true;
+    return;
+  }
 
-        if (words.length === 0) {
-          alert('The file appears empty. Add one word per line and try again.');
-          return;
-        }
+  const secs = parseInt(secondsInput.value, 10);
+  wordDiv.textContent = words[current];
+  counterDiv.textContent = `Word ${current + 1} of ${maxWords}`;
+  startBtn.disabled = true;
 
-        // limit to at most 60 words
-        maxWords = Math.min(60, words.length);
-        current = 0;
-        counterDiv.textContent = `${words.length} words loaded. Showing up to ${maxWords} word(s).`;
-        startBtn.disabled = false;
-        loadBtn.disabled = true;
-        fileInput.disabled = true;
-      };
-      reader.onerror = () => alert('Failed to read file. Try again.');
-      reader.readAsText(file);
-    });
-
-    // show next word for the specified seconds
-    function showNextWord() {
-      if (current >= maxWords) {
-        wordDiv.style.display = 'none';
-        counterDiv.textContent = `Done — ${maxWords} word(s) shown.`;
-        startBtn.disabled = true;
-        startBtn.textContent = 'All done';
-        startBtn.disabled = true;
-        return;
-      }
-
-      const secs = parseInt(secondsInput.value, 10);
-      if (Number.isNaN(secs) || secs < 1) {
-        alert('Set a valid number of seconds (minimum 1).');
-        startBtn.disabled = false;
-        return;
-      }
-
-      // display the word
-      wordDiv.textContent = words[current];
-      wordDiv.style.display = 'block';
-      counterDiv.textContent = `Word ${current + 1} of ${maxWords}`;
-      startBtn.disabled = true; // hide/disable Start while showing
-
-      // after secs seconds, hide and enable Start to show next word
-      displayTimer = setTimeout(() => {
-        wordDiv.style.display = 'none';
-        current++;
-        if (current >= maxWords) {
-          counterDiv.textContent = `Done — ${maxWords} word(s) shown.`;
-          startBtn.textContent = 'All done';
-          startBtn.disabled = true;
-        } else {
-          startBtn.disabled = false;
-          startBtn.textContent = 'Show Next Word';
-        }
-      }, secs * 1000);
+  setTimeout(() => {
+    current++;
+    wordDiv.textContent = "";
+    if (current < maxWords) {
+      startBtn.disabled = false;
+      startBtn.textContent = "Show Next Word";
+    } else {
+      counterDiv.textContent = `Done — ${maxWords} words shown.`;
     }
+  }, secs * 1000);
+}
 
-    // Start/Show Next button handler
-    startBtn.addEventListener('click', () => {
-      // first click on Start should set button text to Show Next Word afterwards
-      if (startBtn.textContent === 'Start' || startBtn.textContent === 'Show Next Word') {
-        showNextWord();
-      }
-    });
+startBtn.addEventListener("click", showNextWord);
+window.addEventListener("load", loadWords);
+</script>
 
-    // keyboard usability: allow Enter to load when file present and focus
-    fileInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !loadBtn.disabled) loadBtn.click();
-    });
-
-    // optional: reset logic if user wants to load a different file
-    // (simple: reload page)
-    // To load another file, refresh the page (F5) and repeat steps.
-  </script>
 </body>
 </html>
+
