@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Word Display App — Upload & Set Time</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;margin:0;background:linear-gradient(135deg,#e0f7ff,#b3d4ff);color:#073b4c}
+    .card{background:rgba(255,255,255,0.9);padding:22px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,0.08);min-width:320px;max-width:520px;text-align:center}
+    h1{margin:0 0 12px;font-size:1.4rem}
+    label{display:block;margin-top:10px;font-size:0.95rem}
+    input[type="file"]{margin-top:8px}
+    input[type="number"]{width:100px;padding:8px;border-radius:8px;border:1px solid #ccc;margin-top:8px}
+    button{margin-top:12px;padding:10px 16px;border-radius:9px;border:none;background:#2b9348;color:white;font-weight:600;cursor:pointer}
+    button:disabled{background:#9fb59f;cursor:default}
+    #word{font-size:2.4rem;margin:18px 0;min-height:2.8rem;display:none}
+    #counter{font-size:0.95rem;color:#094067;margin-top:6px}
+    .hint{font-size:0.85rem;color:#2f4858;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Word Display App</h1>
+
+    <label for="fileInput">1) Upload words file (.txt) — one word per line</label>
+    <input id="fileInput" type="file" accept=".txt" />
+
+    <label for="secondsInput">2) Set display time (seconds) for each word</label>
+    <input id="secondsInput" type="number" value="15" min="1" max="3600" />
+
+    <div style="margin-top:8px">
+      <button id="loadBtn" disabled>Load Words</button>
+      <button id="startBtn" disabled>Start</button>
+    </div>
+
+    <div id="word"></div>
+    <div id="counter"></div>
+    <div class="hint">Will show at most <strong>60 words</strong> (or fewer if your file has fewer).</div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const loadBtn = document.getElementById('loadBtn');
+    const startBtn = document.getElementById('startBtn');
+    const secondsInput = document.getElementById('secondsInput');
+    const wordDiv = document.getElementById('word');
+    const counterDiv = document.getElementById('counter');
+
+    let words = [];
+    let current = 0;
+    let maxWords = 0;
+    let displayTimer = null;
+
+    // enable Load button when file selected
+    fileInput.addEventListener('change', () => {
+      loadBtn.disabled = !fileInput.files.length;
+    });
+
+    // load words from the uploaded file
+    loadBtn.addEventListener('click', () => {
+      const file = fileInput.files[0];
+      if (!file) return alert('Please choose a .txt file.');
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        words = e.target.result
+          .split(/\r?\n/)
+          .map(s => s.trim())
+          .filter(Boolean); // remove empty lines
+
+        if (words.length === 0) {
+          alert('The file appears empty. Add one word per line and try again.');
+          return;
+        }
+
+        // limit to at most 60 words
+        maxWords = Math.min(60, words.length);
+        current = 0;
+        counterDiv.textContent = `${words.length} words loaded. Showing up to ${maxWords} word(s).`;
+        startBtn.disabled = false;
+        loadBtn.disabled = true;
+        fileInput.disabled = true;
+      };
+      reader.onerror = () => alert('Failed to read file. Try again.');
+      reader.readAsText(file);
+    });
+
+    // show next word for the specified seconds
+    function showNextWord() {
+      if (current >= maxWords) {
+        wordDiv.style.display = 'none';
+        counterDiv.textContent = `Done — ${maxWords} word(s) shown.`;
+        startBtn.disabled = true;
+        startBtn.textContent = 'All done';
+        startBtn.disabled = true;
+        return;
+      }
+
+      const secs = parseInt(secondsInput.value, 10);
+      if (Number.isNaN(secs) || secs < 1) {
+        alert('Set a valid number of seconds (minimum 1).');
+        startBtn.disabled = false;
+        return;
+      }
+
+      // display the word
+      wordDiv.textContent = words[current];
+      wordDiv.style.display = 'block';
+      counterDiv.textContent = `Word ${current + 1} of ${maxWords}`;
+      startBtn.disabled = true; // hide/disable Start while showing
+
+      // after secs seconds, hide and enable Start to show next word
+      displayTimer = setTimeout(() => {
+        wordDiv.style.display = 'none';
+        current++;
+        if (current >= maxWords) {
+          counterDiv.textContent = `Done — ${maxWords} word(s) shown.`;
+          startBtn.textContent = 'All done';
+          startBtn.disabled = true;
+        } else {
+          startBtn.disabled = false;
+          startBtn.textContent = 'Show Next Word';
+        }
+      }, secs * 1000);
+    }
+
+    // Start/Show Next button handler
+    startBtn.addEventListener('click', () => {
+      // first click on Start should set button text to Show Next Word afterwards
+      if (startBtn.textContent === 'Start' || startBtn.textContent === 'Show Next Word') {
+        showNextWord();
+      }
+    });
+
+    // keyboard usability: allow Enter to load when file present and focus
+    fileInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !loadBtn.disabled) loadBtn.click();
+    });
+
+    // optional: reset logic if user wants to load a different file
+    // (simple: reload page)
+    // To load another file, refresh the page (F5) and repeat steps.
+  </script>
+</body>
+</html>
