@@ -66,7 +66,6 @@
   <div id="word"></div>
 
   <button id="startBtn" disabled>Start Test</button>
-  <button id="nextBtn" style="display:none;">Next Word</button>
   <button id="restartBtn" style="display:none;">Restart Test</button>
 
   <div id="timer"></div>
@@ -74,7 +73,6 @@
 
   <script>
     const startBtn = document.getElementById("startBtn");
-    const nextBtn = document.getElementById("nextBtn");
     const restartBtn = document.getElementById("restartBtn");
     const wordDiv = document.getElementById("word");
     const counterDiv = document.getElementById("counter");
@@ -83,10 +81,10 @@
     let words = [];
     let randomWords = [];
     let current = 0;
-    const DISPLAY_TIME = 15;
+    const DISPLAY_TIME = 15; // seconds per word
     let countdown;
+    let autoNext;
 
-    // ✅ Your GitHub words link
     const WORDS_URL = "https://raw.githubusercontent.com/kamaljoshi21/WAT-Test/refs/heads/main/words.txt";
 
     async function loadWords() {
@@ -113,6 +111,7 @@
 
     function startTest() {
       clearInterval(countdown);
+      clearTimeout(autoNext);
       randomWords = shuffle([...words]).slice(0, 60);
       current = 0;
       startBtn.style.display = "none";
@@ -129,32 +128,32 @@
       let timeLeft = DISPLAY_TIME;
       wordDiv.textContent = randomWords[current];
       timerDiv.textContent = `⏳ ${timeLeft}s`;
-      nextBtn.style.display = "none";
       counterDiv.textContent = `Word ${current + 1} of ${randomWords.length}`;
 
       countdown = setInterval(() => {
         timeLeft--;
         timerDiv.textContent = `⏳ ${timeLeft}s`;
-
-        if (timeLeft <= 0) {
-          clearInterval(countdown);
-          wordDiv.textContent = "";
-          timerDiv.textContent = "";
-          nextBtn.style.display = "inline-block";
-        }
       }, 1000);
+
+      autoNext = setTimeout(() => {
+        clearInterval(countdown);
+        current++;
+        showWord();
+      }, DISPLAY_TIME * 1000);
     }
 
     function endTest() {
+      clearInterval(countdown);
+      clearTimeout(autoNext);
       wordDiv.textContent = "";
       timerDiv.textContent = "";
       counterDiv.textContent = `✅ Test complete — ${randomWords.length} words shown.`;
-      nextBtn.style.display = "none";
       restartBtn.style.display = "inline-block";
     }
 
     function restartTest() {
       clearInterval(countdown);
+      clearTimeout(autoNext);
       wordDiv.textContent = "";
       timerDiv.textContent = "";
       counterDiv.textContent = "";
@@ -162,14 +161,11 @@
       restartBtn.style.display = "none";
     }
 
-    nextBtn.addEventListener("click", () => {
-      current++;
-      showWord();
-    });
-
     startBtn.addEventListener("click", startTest);
     restartBtn.addEventListener("click", restartTest);
     window.addEventListener("load", loadWords);
   </script>
 </body>
 </html>
+
+
